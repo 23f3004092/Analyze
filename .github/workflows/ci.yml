@@ -1,0 +1,55 @@
+name: CI and Deploy to Pages
+
+on:
+  push:
+    branches: [ main ] # Trigger on push to the main branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Specify Python version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas ruff
+          # If execute.py requires other specific libraries, add them here
+
+      - name: Lint with Ruff
+        run: ruff check .
+
+      - name: Run data processing script
+        # Ensure data.csv is available in the working directory
+        run: python execute.py > result.json
+
+      - name: Upload result.json artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-json
+          path: result.json
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact for deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-pages-artifact
+          path: ./${{ github.event.repository.name }} # Changed to refer to repo name for clarity
+          # Note: Depending on the repo structure, you might need to adjust this path.
+          # For a simple structure, this might just be './' or './docs'
+          # If you deploy to a specific subfolder, adjust accordingly.
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        # This step implicitly uses the artifact uploaded by 'Upload artifact for deployment'
+        # Ensure your repo settings are configured for GitHub Pages deployment (e.g., from 'gh-pages' branch or 'docs/' folder)
